@@ -131,7 +131,21 @@ class AIService {
           return {'analysis': content, 'raw': true};
         }
       } else {
-        throw Exception('GPT-4 Vision API error: ${response.statusCode}');
+        // رسائل خطأ واضحة
+        String errorMessage;
+        if (response.statusCode == 401) {
+          errorMessage = 'مفتاح API غير صالح أو منتهي. الرجاء:\n'
+              '1. التحقق من المفتاح\n'
+              '2. التأكد من وجود رصيد\n'
+              '3. أو استخدم DeepSeek (أرخص 50 مرة!)';
+        } else if (response.statusCode == 429) {
+          errorMessage = 'تجاوز الحد المسموح. انتظر قليلاً أو استخدم DeepSeek';
+        } else if (response.statusCode == 403) {
+          errorMessage = 'الوصول مرفوض. تحقق من المفتاح والأذونات';
+        } else {
+          errorMessage = 'خطأ API: ${response.statusCode}\n${response.body}';
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
       print('خطأ في التصنيف التلقائي: $e');

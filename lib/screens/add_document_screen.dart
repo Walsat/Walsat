@@ -842,10 +842,68 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ خطأ في التحليل: ${e.toString()}'),
-            duration: const Duration(seconds: 4),
+        
+        // رسالة خطأ مفصلة
+        final errorMsg = e.toString();
+        String displayMsg = '❌ خطأ في التحليل';
+        String actionMsg = '';
+        
+        if (errorMsg.contains('401') || errorMsg.contains('غير صالح') || errorMsg.contains('Unauthorized')) {
+          displayMsg = '🔒 مفتاح API غير صالح أو منتهي';
+          actionMsg = '\n\n✨ البدائل المجانية/الرخيصة:\n'
+              '━━━━━━━━━━━━━━━━━━━━━\n'
+              '1️⃣ OCR المجاني (الزر الأخضر 🟢)\n'
+              '   • مجاني 100% بدون حد\n'
+              '   • دقة 80-85%\n'
+              '   • يعمل بدون إنترنت\n\n'
+              '2️⃣ DeepSeek (البنفسجي 🟣)\n'
+              '   • أرخص 50 مرة من OpenAI!\n'
+              r'   • $0.001 لكل وثيقة فقط' '\n'
+              '   • دقة 90-93%\n'
+              '   • سجل في: platform.deepseek.com';
+        } else if (errorMsg.contains('429') || errorMsg.contains('quota') || errorMsg.contains('insufficient')) {
+          displayMsg = '💳 الرصيد منتهي أو تجاوز الحد';
+          actionMsg = '\n\n✨ حلول فورية:\n'
+              '━━━━━━━━━━━━━━━━━━━━━\n'
+              '1️⃣ OCR المجاني (الزر الأخضر)\n'
+              '   • بدون تكلفة نهائياً!\n\n'
+              '2️⃣ DeepSeek\n'
+              r'   • $0.10 لـ 100 وثيقة' '\n'
+              r'   • OpenAI = $5 لـ 100 وثيقة';
+        } else if (errorMsg.contains('timeout') || errorMsg.contains('Connection') || errorMsg.contains('network')) {
+          displayMsg = '🌐 مشكلة في الاتصال بالإنترنت';
+          actionMsg = '\n\n✅ الحل:\n'
+              '━━━━━━━━━━━━━━━━━━━━━\n'
+              'استخدم OCR المجاني (الزر الأخضر)\n'
+              '• يعمل بدون إنترنت تماماً!\n'
+              '• دقة جيدة 80-85%\n'
+              '• سريع ومباشر';
+        } else {
+          displayMsg = '❌ خطأ في التحليل';
+          actionMsg = '\n\n💡 جرّب البدائل:\n'
+              '━━━━━━━━━━━━━━━━━━━━━\n'
+              '1️⃣ OCR المجاني (زر أخضر)\n'
+              '2️⃣ DeepSeek (أرخص 50x)\n'
+              '3️⃣ راجع إعدادات الذكاء الاصطناعي\n\n'
+              'التفاصيل: ${e.toString().length > 80 ? e.toString().substring(0, 80) + '...' : e.toString()}';
+        }
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('⚠️ خطأ في التحليل'),
+            content: SingleChildScrollView(
+              child: Text(
+                '$displayMsg$actionMsg',
+                style: const TextStyle(height: 1.5),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('حسناً'),
+              ),
+            ],
           ),
         );
       }
