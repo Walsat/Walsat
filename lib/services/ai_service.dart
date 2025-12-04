@@ -4,27 +4,28 @@ import 'package:http/http.dart' as http;
 import 'package:dio/dio.dart';
 
 class AIService {
-  final String? openAIKey;
-  final String? googleVisionKey;
-  
   // Singleton pattern
   static final AIService _instance = AIService._internal();
   factory AIService({String? openAIKey, String? googleVisionKey}) {
-    _instance.openAIKey = openAIKey;
-    _instance.googleVisionKey = googleVisionKey;
+    if (openAIKey != null) _instance._openAIKey = openAIKey;
+    if (googleVisionKey != null) _instance._googleVisionKey = googleVisionKey;
     return _instance;
   }
   AIService._internal();
 
-  String? openAIKey;
-  String? googleVisionKey;
+  String? _openAIKey;
+  String? _googleVisionKey;
+
+  // Getters
+  String? get openAIKey => _openAIKey;
+  String? get googleVisionKey => _googleVisionKey;
 
   // Check if AI services are configured
-  bool get isConfigured => openAIKey != null || googleVisionKey != null;
+  bool get isConfigured => _openAIKey != null || _googleVisionKey != null;
 
   // Analyze document with GPT-4 Vision
   Future<Map<String, dynamic>> analyzeDocumentWithGPT4(String imagePath) async {
-    if (openAIKey == null) {
+    if (_openAIKey == null) {
       throw Exception('OpenAI API key not configured');
     }
 
@@ -39,7 +40,7 @@ class AIService {
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $openAIKey',
+          'Authorization': 'Bearer $_openAIKey',
         },
         body: jsonEncode({
           'model': 'gpt-4o',
@@ -97,7 +98,7 @@ class AIService {
 
   // OCR with Google Vision API
   Future<String> extractTextWithGoogleVision(String imagePath) async {
-    if (googleVisionKey == null) {
+    if (_googleVisionKey == null) {
       throw Exception('Google Vision API key not configured');
     }
 
@@ -109,7 +110,7 @@ class AIService {
 
       // Call Google Vision API
       final response = await http.post(
-        Uri.parse('https://vision.googleapis.com/v1/images:annotate?key=$googleVisionKey'),
+        Uri.parse('https://vision.googleapis.com/v1/images:annotate?key=$_googleVisionKey'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'requests': [
@@ -150,7 +151,7 @@ class AIService {
     String query,
     List<Map<String, dynamic>> documents,
   ) async {
-    if (openAIKey == null) {
+    if (_openAIKey == null) {
       return [];
     }
 
@@ -172,7 +173,7 @@ class AIService {
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $openAIKey',
+          'Authorization': 'Bearer $_openAIKey',
         },
         body: jsonEncode({
           'model': 'gpt-4o',
@@ -219,7 +220,7 @@ ${jsonEncode(docsSummary)}
 
   // Generate smart tags using AI
   Future<List<String>> generateSmartTags(String text, String? ocrText) async {
-    if (openAIKey == null) {
+    if (_openAIKey == null) {
       return [];
     }
 
@@ -230,7 +231,7 @@ ${jsonEncode(docsSummary)}
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $openAIKey',
+          'Authorization': 'Bearer $_openAIKey',
         },
         body: jsonEncode({
           'model': 'gpt-4o-mini',
@@ -265,7 +266,7 @@ ${jsonEncode(docsSummary)}
 
   // Summarize document
   Future<String> summarizeDocument(String text, String? ocrText) async {
-    if (openAIKey == null) {
+    if (_openAIKey == null) {
       throw Exception('OpenAI API key not configured');
     }
 
@@ -276,7 +277,7 @@ ${jsonEncode(docsSummary)}
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $openAIKey',
+          'Authorization': 'Bearer $_openAIKey',
         },
         body: jsonEncode({
           'model': 'gpt-4o-mini',
@@ -304,7 +305,7 @@ ${jsonEncode(docsSummary)}
 
   // Ask question about document
   Future<String> askQuestion(String question, String documentText, String? ocrText) async {
-    if (openAIKey == null) {
+    if (_openAIKey == null) {
       throw Exception('OpenAI API key not configured');
     }
 
@@ -315,7 +316,7 @@ ${jsonEncode(docsSummary)}
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $openAIKey',
+          'Authorization': 'Bearer $_openAIKey',
         },
         body: jsonEncode({
           'model': 'gpt-4o',

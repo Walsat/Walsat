@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/document.dart';
 import '../services/database_service.dart';
 import '../services/pdf_service.dart';
+import '../services/ai_service.dart';
+import '../config/api_config.dart';
 import 'add_document_screen.dart';
 
 class DocumentDetailScreen extends StatefulWidget {
@@ -56,9 +58,48 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 _generatePdf();
               } else if (value == 'share') {
                 _sharePdf();
+              } else if (value == 'ai_analyze') {
+                _analyzeWithAI();
+              } else if (value == 'ai_summary') {
+                _summarizeWithAI();
+              } else if (value == 'ai_ask') {
+                _askAIQuestion();
               }
             },
             itemBuilder: (context) => [
+              if (APIConfig.hasOpenAI) ...[
+                const PopupMenuItem(
+                  value: 'ai_analyze',
+                  child: Row(
+                    children: [
+                      Icon(Icons.auto_awesome, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Text('تحليل بالذكاء الاصطناعي'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'ai_summary',
+                  child: Row(
+                    children: [
+                      Icon(Icons.summarize, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Text('تلخيص الوثيقة'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'ai_ask',
+                  child: Row(
+                    children: [
+                      Icon(Icons.question_answer, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Text('اسأل عن الوثيقة'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+              ],
               const PopupMenuItem(
                 value: 'pdf',
                 child: Row(
@@ -439,5 +480,394 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         );
       }
     }
+  }
+
+  // AI Features
+  void _analyzeWithAI() async {
+    if (!APIConfig.hasOpenAI) {
+      _showAINotConfiguredDialog();
+      return;
+    }
+
+    if (widget.document.imagePaths.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا توجد صور لتحليلها'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('جاري تحليل الوثيقة بالذكاء الاصطناعي...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final aiService = context.read<AIService>();
+      final analysis = await aiService.analyzeDocumentWithGPT4(
+        widget.document.imagePaths.first,
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        _showAnalysisDialog(analysis);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في التحليل: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _summarizeWithAI() async {
+    if (!APIConfig.hasOpenAI) {
+      _showAINotConfiguredDialog();
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('جاري تلخيص الوثيقة...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final aiService = context.read<AIService>();
+      final documentText = '''
+العنوان: ${widget.document.title}
+الوصف: ${widget.document.description}
+النوع: ${widget.document.typeDisplayName}
+الموقع: ${widget.document.location ?? ''}
+المالك: ${widget.document.ownerName ?? ''}
+المساحة: ${widget.document.area ?? ''}
+الوسوم: ${widget.document.tags.join(', ')}
+''';
+
+      final summary = await aiService.summarizeDocument(documentText, null);
+
+      if (mounted) {
+        Navigator.pop(context);
+        _showSummaryDialog(summary);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في التلخيص: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _askAIQuestion() async {
+    if (!APIConfig.hasOpenAI) {
+      _showAINotConfiguredDialog();
+      return;
+    }
+
+    final TextEditingController questionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.question_answer, color: Colors.purple),
+              SizedBox(width: 12),
+              Text('اسأل عن الوثيقة'),
+            ],
+          ),
+          content: TextField(
+            controller: questionController,
+            decoration: const InputDecoration(
+              hintText: 'ما هو سؤالك؟',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final question = questionController.text.trim();
+                if (question.isEmpty) return;
+
+                Navigator.pop(context);
+
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('جاري البحث عن الإجابة...'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+
+                try {
+                  final aiService = context.read<AIService>();
+                  final documentText = '''
+العنوان: ${widget.document.title}
+الوصف: ${widget.document.description}
+النوع: ${widget.document.typeDisplayName}
+الحالة: ${widget.document.statusDisplayName}
+الموقع: ${widget.document.location ?? ''}
+المالك: ${widget.document.ownerName ?? ''}
+المساحة: ${widget.document.area ?? ''}
+الوسوم: ${widget.document.tags.join(', ')}
+''';
+
+                  final answer = await aiService.askQuestion(
+                    question,
+                    documentText,
+                    null,
+                  );
+
+                  if (mounted) {
+                    Navigator.pop(context);
+                    _showAnswerDialog(question, answer);
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('خطأ: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('اسأل'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAINotConfiguredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange),
+              SizedBox(width: 12),
+              Text('الذكاء الاصطناعي غير مفعّل'),
+            ],
+          ),
+          content: const Text(
+            'لاستخدام ميزات الذكاء الاصطناعي، يرجى تفعيل OpenAI API في إعدادات التطبيق.\n\n'
+            'راجع ملفات:\n'
+            '• SECURITY_GUIDE.md\n'
+            '• API_SETUP_GUIDE.md',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('حسناً'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAnalysisDialog(Map<String, dynamic> analysis) {
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.purple),
+              SizedBox(width: 12),
+              Text('تحليل الوثيقة'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: analysis.entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(entry.value.toString()),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إغلاق'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSummaryDialog(String summary) {
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.summarize, color: Colors.purple),
+              SizedBox(width: 12),
+              Text('ملخص الوثيقة'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Text(summary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إغلاق'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAnswerDialog(String question, String answer) {
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.question_answer, color: Colors.purple),
+              SizedBox(width: 12),
+              Text('الإجابة'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'السؤال:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(question),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'الإجابة:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(answer),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إغلاق'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

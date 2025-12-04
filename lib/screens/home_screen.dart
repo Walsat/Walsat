@@ -6,6 +6,7 @@ import 'add_document_screen.dart';
 import 'document_detail_screen.dart';
 import 'search_screen.dart';
 import 'statistics_screen.dart';
+import 'ai_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -53,9 +54,26 @@ class _HomeScreenState extends State<HomeScreen> {
             onSelected: (value) {
               if (value == 'about') {
                 _showAboutDialog();
+              } else if (value == 'ai_settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AISettingsScreen(),
+                  ),
+                );
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'ai_settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.psychology, color: Colors.purple),
+                    SizedBox(width: 8),
+                    Text('إعدادات AI'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'about',
                 child: Row(
