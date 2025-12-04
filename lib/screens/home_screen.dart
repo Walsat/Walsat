@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/document.dart';
 import '../services/database_service.dart';
+import '../theme/app_colors.dart';
 import 'add_document_screen.dart';
 import 'document_detail_screen.dart';
 import 'search_screen.dart';
@@ -26,10 +27,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('أرشيف الوثائق'),
+        title: const Row(
+          children: [
+            Icon(Icons.folder_special, size: 28),
+            SizedBox(width: 12),
+            Text('أرشيف الوثائق'),
+          ],
+        ),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.gradientPrimary,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.search, size: 22),
+            ),
             onPressed: () {
               Navigator.push(
                 context,
@@ -40,7 +60,14 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.bar_chart),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.bar_chart, size: 22),
+            ),
             onPressed: () {
               Navigator.push(
                 context,
@@ -51,7 +78,14 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.more_vert, size: 22),
+            ),
             onSelected: (value) {
               if (value == 'settings') {
                 Navigator.push(
@@ -71,13 +105,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
             },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'settings',
                 child: Row(
                   children: [
-                    Icon(Icons.settings, color: Colors.blue),
-                    SizedBox(width: 8),
+                    Icon(Icons.settings, color: AppColors.primary),
+                    SizedBox(width: 12),
                     Text('الإعدادات'),
                   ],
                 ),
@@ -87,8 +124,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 value: 'ai_settings',
                 child: Row(
                   children: [
-                    Icon(Icons.psychology, color: Colors.purple),
-                    SizedBox(width: 8),
+                    Icon(Icons.psychology, color: Color(0xFF9C27B0)),
+                    SizedBox(width: 12),
                     Text('إعدادات AI'),
                   ],
                 ),
@@ -97,14 +134,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 value: 'about',
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline),
-                    SizedBox(width: 8),
+                    Icon(Icons.info_outline, color: AppColors.secondary),
+                    SizedBox(width: 12),
                     Text('حول التطبيق'),
                   ],
                 ),
               ),
             ],
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -202,49 +240,138 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddDocumentScreen(),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.gradientPrimary,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.5),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-          );
-          if (result == true) {
-            setState(() {});
-          }
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('إضافة وثيقة'),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AddDocumentScreen(),
+              ),
+            );
+            if (result == true) {
+              setState(() {});
+            }
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          icon: const Icon(Icons.add_circle_outline, size: 28),
+          label: const Text(
+            'إضافة وثيقة',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildFilterChip(String label, String value, bool isSelected) {
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() {
-          _selectedFilter = value;
-        });
-      },
-      selectedColor: Theme.of(context).colorScheme.primaryContainer,
-      checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isSelected ? AppColors.gradientPrimary : null,
+        color: isSelected ? null : Colors.grey[200],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _selectedFilter = value;
+            });
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSelected)
+                  const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                if (isSelected) const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.black87,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildTypeChip(String label, String value, bool isSelected) {
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() {
-          _selectedType = value;
-        });
-      },
-      selectedColor: Theme.of(context).colorScheme.secondaryContainer,
-      checkmarkColor: Theme.of(context).colorScheme.onSecondaryContainer,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isSelected ? AppColors.gradientSecondary : null,
+        color: isSelected ? null : Colors.grey[200],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: AppColors.secondary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _selectedType = value;
+            });
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSelected)
+                  const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                if (isSelected) const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.black87,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

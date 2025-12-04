@@ -8,6 +8,9 @@ import '../services/image_service.dart';
 import '../services/ai_service.dart';
 import '../services/local_ocr_service.dart';
 import '../config/api_config.dart';
+import '../theme/app_colors.dart';
+import '../widgets/gradient_button.dart';
+import '../widgets/modern_card.dart';
 
 class AddDocumentScreen extends StatefulWidget {
   final Document? document;
@@ -83,12 +86,31 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.document == null ? 'إضافة وثيقة' : 'تعديل الوثيقة'),
+        title: Text(widget.document == null ? 'إضافة وثيقة جديدة' : 'تعديل الوثيقة'),
+        elevation: 0,
+        centerTitle: true,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.gradientPrimary,
+          ),
+        ),
         actions: [
           if (!_isSaving)
-            IconButton(
-              icon: const Icon(Icons.check),
-              onPressed: _saveDocument,
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: ElevatedButton.icon(
+                onPressed: _saveDocument,
+                icon: const Icon(Icons.check, size: 20),
+                label: const Text('حفظ'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.primary,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ),
           if (_isSaving)
             const Padding(
@@ -96,7 +118,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
               child: SizedBox(
                 width: 24,
                 height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
               ),
             ),
         ],
@@ -224,20 +249,39 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
             
             const SizedBox(height: 24),
             
-            // Images Section
-            Text(
-              'الصور',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+            // Images Section - Modern Header
+            ModernSectionHeader(
+              title: 'صور الوثيقة',
+              subtitle: 'التقط صور واضحة للوثيقة',
+              icon: Icons.photo_camera,
+              gradient: AppColors.gradientSecondary,
+              trailing: _imagePaths.isNotEmpty
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.gradientSecondary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_imagePaths.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(height: 16),
             
-            // Image buttons
+            // Image buttons - Modern Design
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
+                  child: GradientButton(
+                    text: 'التقاط صورة',
+                    icon: Icons.camera_alt,
+                    gradient: AppColors.gradientPrimary,
                     onPressed: () async {
                       try {
                         final path = await imageService.takePhoto();
@@ -247,25 +291,52 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                           });
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('تم التقاط الصورة بنجاح')),
+                              SnackBar(
+                                content: const Row(
+                                  children: [
+                                    Icon(Icons.check_circle, color: Colors.white),
+                                    SizedBox(width: 12),
+                                    Text('تم التقاط الصورة بنجاح!'),
+                                  ],
+                                ),
+                                backgroundColor: AppColors.success,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                             );
                           }
                         }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('خطأ: $e')),
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.error_outline, color: Colors.white),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: Text('خطأ: $e')),
+                                ],
+                              ),
+                              backgroundColor: AppColors.error,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
                           );
                         }
                       }
                     },
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('التقاط صورة'),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: GradientOutlinedButton(
+                    text: 'من المعرض',
+                    icon: Icons.photo_library,
+                    gradient: AppColors.gradientSecondary,
                     onPressed: () async {
                       try {
                         final paths = await imageService.pickMultipleImages();
@@ -275,20 +346,44 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                           });
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('تم إضافة ${paths.length} صورة')),
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, color: Colors.white),
+                                    const SizedBox(width: 12),
+                                    Text('تم إضافة ${paths.length} صورة'),
+                                  ],
+                                ),
+                                backgroundColor: AppColors.success,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                             );
                           }
                         }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('خطأ: $e')),
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.error_outline, color: Colors.white),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: Text('خطأ: $e')),
+                                ],
+                              ),
+                              backgroundColor: AppColors.error,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
                           );
                         }
                       }
                     },
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('اختيار من المعرض'),
                   ),
                 ),
               ],
@@ -342,63 +437,110 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
             
             const SizedBox(height: 24),
             
-            // AI Analysis Section
+            // AI Analysis Section - Modern Design
             if (_imagePaths.isNotEmpty) ...[
-              Text(
-                'تحليل بالذكاء الاصطناعي',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+              const SizedBox(height: 8),
+              ModernCard(
+                gradient: AppColors.gradientAI.scale(0.1),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ModernSectionHeader(
+                      title: 'تحليل ذكي للوثيقة',
+                      subtitle: 'استخدم الذكاء الاصطناعي لتوفير الوقت',
+                      icon: Icons.auto_awesome,
+                      gradient: AppColors.gradientAI,
                     ),
-              ),
-              const SizedBox(height: 16),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _isAnalyzing ? null : _analyzeWithAI,
-                      icon: _isAnalyzing
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.psychology),
-                      label: Text(_isAnalyzing ? 'جاري التحليل...' : 'تحليل الوثيقة'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                        foregroundColor: Colors.white,
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GradientButton(
+                            text: _isAnalyzing ? 'جاري التحليل...' : 'تحليل مدفوع (GPT-4)',
+                            icon: Icons.psychology,
+                            gradient: AppColors.gradientAI,
+                            isLoading: _isAnalyzing,
+                            onPressed: _isAnalyzing ? null : _analyzeWithAI,
+                            height: 56,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GradientButton(
+                            text: _isAnalyzing ? 'جاري الاستخراج...' : 'استخراج مجاني (OCR)',
+                            icon: Icons.document_scanner,
+                            gradient: AppColors.gradientOCR,
+                            isLoading: _isAnalyzing,
+                            onPressed: _isAnalyzing ? null : _extractText,
+                            height: 56,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.info.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.info.withOpacity(0.3),
+                        ),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outline, color: AppColors.info, size: 20),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'التحليل المدفوع: دقة عالية مع مفتاح OpenAI\nالاستخراج المجاني: يعمل بدون إنترنت',
+                              style: TextStyle(fontSize: 12, height: 1.5),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _isAnalyzing ? null : _extractText,
-                      icon: const Icon(Icons.text_fields),
-                      label: const Text('استخراج النص (OCR)'),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              
               const SizedBox(height: 24),
             ],
             
-            // Tags Section
-            Text(
-              'الوسوم',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+            // Tags Section - Modern Design
+            ModernSectionHeader(
+              title: 'الوسوم والكلمات المفتاحية',
+              subtitle: 'أضف وسوم لسهولة البحث',
+              icon: Icons.label,
+              gradient: AppColors.gradientAccent,
+              trailing: _tags.isNotEmpty
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.gradientAccent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${_tags.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(height: 16),
             
             // Add tag button
-            OutlinedButton.icon(
+            GradientOutlinedButton(
+              text: 'إضافة وسم جديد',
+              icon: Icons.add_circle_outline,
+              gradient: AppColors.gradientAccent,
               onPressed: _showAddTagDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('إضافة وسم'),
             ),
             
             const SizedBox(height: 16),
@@ -409,9 +551,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: _tags.map((tag) {
-                  return Chip(
-                    label: Text(tag),
-                    deleteIcon: const Icon(Icons.close, size: 18),
+                  return GradientChip(
+                    label: tag,
+                    icon: Icons.tag,
+                    gradient: AppColors.gradientAccent,
                     onDeleted: () {
                       setState(() {
                         _tags.remove(tag);
