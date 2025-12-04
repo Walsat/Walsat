@@ -1,0 +1,70 @@
+name: document_archive
+description: "نظام أرشفة الوثائق الاحترافي - Professional Document Archive System"
+publish_to: 'none'
+
+version: 4.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # UI & Icons
+  cupertino_icons: ^1.0.6
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Local Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.1
+  
+  # Image Handling
+  image_picker: ^1.0.7
+  image: ^4.1.7
+  
+  # PDF & Printing
+  pdf: ^3.10.7
+  printing: ^5.11.1
+  
+  # Permissions
+  permission_handler: ^11.2.0
+  
+  # Networking (for AI - Optional)
+  http: ^1.2.0
+  dio: ^5.4.0
+  
+  # Utilities
+  intl: ^0.18.1
+  shared_preferences: ^2.2.2
+  uuid: ^4.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  
+  # Code Generation
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.7
+
+flutter:
+  uses-material-design: true
+  
+  # Assets
+  assets:
+    - assets/images/
+    - assets/fonts/
+  
+  # Fonts for Arabic
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
+        - asset: assets/fonts/Cairo-Bold.ttf
+          weight: 700
