@@ -101,15 +101,19 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildTypeChip('الكل', 'all', _selectedType == 'all'),
                 const SizedBox(width: 8),
-                _buildTypeChip('صك ملكية', 'land_deed', _selectedType == 'land_deed'),
+                _buildTypeChip('كتب الأراضي', 'land_registry', _selectedType == 'land_registry'),
                 const SizedBox(width: 8),
-                _buildTypeChip('عقد بيع', 'sale_contract', _selectedType == 'sale_contract'),
+                _buildTypeChip('وزارة الزراعة', 'agriculture_ministry', _selectedType == 'agriculture_ministry'),
                 const SizedBox(width: 8),
-                _buildTypeChip('عقد إيجار', 'rent_contract', _selectedType == 'rent_contract'),
+                _buildTypeChip('المحافظ', 'governor_saladin', _selectedType == 'governor_saladin'),
                 const SizedBox(width: 8),
-                _buildTypeChip('مخطط مساحي', 'survey', _selectedType == 'survey'),
+                _buildTypeChip('مديرية زراعة', 'agriculture_directorate', _selectedType == 'agriculture_directorate'),
                 const SizedBox(width: 8),
-                _buildTypeChip('رخصة بناء', 'license', _selectedType == 'license'),
+                _buildTypeChip('شعبة زراعة', 'agriculture_division', _selectedType == 'agriculture_division'),
+                const SizedBox(width: 8),
+                _buildTypeChip('أوامر مهمة', 'important_orders', _selectedType == 'important_orders'),
+                const SizedBox(width: 8),
+                _buildTypeChip('الشكوي', 'complaints', _selectedType == 'complaints'),
                 const SizedBox(width: 8),
                 _buildTypeChip('أخرى', 'other', _selectedType == 'other'),
               ],
@@ -388,16 +392,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   IconData _getDocumentIcon(String type) {
     switch (type) {
-      case 'land_deed':
-        return Icons.home;
-      case 'sale_contract':
-        return Icons.sell;
-      case 'rent_contract':
-        return Icons.key;
-      case 'survey':
-        return Icons.map;
-      case 'license':
-        return Icons.description;
+      case 'land_registry':
+        return Icons.domain;
+      case 'agriculture_ministry':
+        return Icons.agriculture;
+      case 'governor_saladin':
+        return Icons.account_balance;
+      case 'agriculture_directorate':
+        return Icons.business;
+      case 'agriculture_division':
+        return Icons.corporate_fare;
+      case 'important_orders':
+        return Icons.priority_high;
+      case 'complaints':
+        return Icons.report_problem;
       default:
         return Icons.insert_drive_file;
     }

@@ -23,18 +23,21 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
   final _ownerController = TextEditingController();
   final _areaController = TextEditingController();
   
-  String _selectedType = 'land_deed';
+  String _selectedType = 'land_registry';
   String _selectedStatus = 'new';
   List<String> _imagePaths = [];
   List<String> _tags = [];
   bool _isSaving = false;
+  bool _isAnalyzing = false;
 
   final List<Map<String, dynamic>> _documentTypes = [
-    {'value': 'land_deed', 'label': 'صك ملكية', 'icon': Icons.home},
-    {'value': 'sale_contract', 'label': 'عقد بيع', 'icon': Icons.sell},
-    {'value': 'rent_contract', 'label': 'عقد إيجار', 'icon': Icons.key},
-    {'value': 'survey', 'label': 'مخطط مساحي', 'icon': Icons.map},
-    {'value': 'license', 'label': 'رخصة بناء', 'icon': Icons.description},
+    {'value': 'land_registry', 'label': 'كتب دائرة الأراضي', 'icon': Icons.domain},
+    {'value': 'agriculture_ministry', 'label': 'وزارة الزراعة', 'icon': Icons.agriculture},
+    {'value': 'governor_saladin', 'label': 'محافظ صلاح الدين', 'icon': Icons.account_balance},
+    {'value': 'agriculture_directorate', 'label': 'مديرية الزراعة', 'icon': Icons.business},
+    {'value': 'agriculture_division', 'label': 'شعبة الزراعة', 'icon': Icons.corporate_fare},
+    {'value': 'important_orders', 'label': 'أوامر مهمة', 'icon': Icons.priority_high},
+    {'value': 'complaints', 'label': 'الأبيض الشكوي', 'icon': Icons.report_problem},
     {'value': 'other', 'label': 'أخرى', 'icon': Icons.insert_drive_file},
   ];
 
@@ -336,6 +339,49 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
             
             const SizedBox(height: 24),
             
+            // AI Analysis Section
+            if (_imagePaths.isNotEmpty) ...[
+              Text(
+                'تحليل بالذكاء الاصطناعي',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isAnalyzing ? null : _analyzeWithAI,
+                      icon: _isAnalyzing
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.psychology),
+                      label: Text(_isAnalyzing ? 'جاري التحليل...' : 'تحليل الوثيقة'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isAnalyzing ? null : _extractText,
+                      icon: const Icon(Icons.text_fields),
+                      label: const Text('استخراج النص (OCR)'),
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 24),
+            ],
+            
             // Tags Section
             Text(
               'الوسوم',
@@ -479,6 +525,155 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
       if (mounted) {
         setState(() {
           _isSaving = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _analyzeWithAI() async {
+    if (_imagePaths.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الرجاء إضافة صورة أولاً')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isAnalyzing = true;
+    });
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('جاري تحليل الوثيقة بالذكاء الاصطناعي...'),
+              SizedBox(height: 8),
+              Text('قد يستغرق هذا دقيقة...', style: TextStyle(fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+
+      // Note: AI service needs API key configuration
+      // For now, show a dialog about configuration
+      await Future.delayed(const Duration(seconds: 2));
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('تكوين الذكاء الاصطناعي'),
+            content: const Text(
+              'لاستخدام ميزة التحليل بالذكاء الاصطناعي، يجب تكوين مفتاح API:\n\n'
+              '1. احصل على مفتاح OpenAI API من: platform.openai.com\n'
+              '2. أو مفتاح Google Vision API\n'
+              '3. أضفه في إعدادات التطبيق\n\n'
+              'بمجرد التكوين، ستتمكن من:\n'
+              '• تحليل محتوى الوثائق\n'
+              '• استخراج المعلومات تلقائياً\n'
+              '• توليد وسوم ذكية\n'
+              '• البحث الذكي',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('حسناً'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في التحليل: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAnalyzing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _extractText() async {
+    if (_imagePaths.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الرجاء إضافة صورة أولاً')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isAnalyzing = true;
+    });
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('جاري استخراج النص من الصورة...'),
+            ],
+          ),
+        ),
+      );
+
+      await Future.delayed(const Duration(seconds: 2));
+      
+      if (mounted) {
+        Navigator.pop(context);
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('استخراج النص (OCR)'),
+            content: const Text(
+              'لاستخدام ميزة استخراج النص (OCR)، يجب تكوين:\n\n'
+              '• Google Vision API\n'
+              'أو\n'
+              '• OpenAI GPT-4 Vision\n\n'
+              'هذه الميزة ستساعدك في:\n'
+              '• استخراج النص من الصور\n'
+              '• البحث في محتوى الوثائق\n'
+              '• الفهرسة التلقائية',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('حسناً'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAnalyzing = false;
         });
       }
     }

@@ -49,6 +49,21 @@ class Document extends HiveObject {
   @HiveField(14)
   String? pdfPath;
 
+  @HiveField(15)
+  String? ocrText;
+
+  @HiveField(16)
+  String? googleDriveId;
+
+  @HiveField(17)
+  List<String>? aiTags;
+
+  @HiveField(18)
+  String? documentNumber;
+
+  @HiveField(19)
+  String? issueDate;
+
   Document({
     required this.id,
     required this.title,
@@ -65,21 +80,30 @@ class Document extends HiveObject {
     this.aiAnalysis,
     this.isFavorite = false,
     this.pdfPath,
+    this.ocrText,
+    this.googleDriveId,
+    this.aiTags,
+    this.documentNumber,
+    this.issueDate,
   });
 
   // Helper method to get display name for document type
   String get typeDisplayName {
     switch (type) {
-      case 'land_deed':
-        return 'صك ملكية';
-      case 'sale_contract':
-        return 'عقد بيع';
-      case 'rent_contract':
-        return 'عقد إيجار';
-      case 'survey':
-        return 'مخطط مساحي';
-      case 'license':
-        return 'رخصة بناء';
+      case 'land_registry':
+        return 'كتب دائرة الأراضي';
+      case 'agriculture_ministry':
+        return 'وزارة الزراعة';
+      case 'governor_saladin':
+        return 'محافظ صلاح الدين';
+      case 'agriculture_directorate':
+        return 'مديرية الزراعة';
+      case 'agriculture_division':
+        return 'شعبة الزراعة';
+      case 'important_orders':
+        return 'أوامر مهمة';
+      case 'complaints':
+        return 'الأبيض الشكوي';
       case 'other':
         return 'أخرى';
       default:

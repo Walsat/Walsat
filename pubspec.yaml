@@ -2,7 +2,7 @@ name: document_archive
 description: "نظام أرشفة الوثائق الاحترافي - Professional Document Archive System"
 publish_to: 'none'
 
-version: 4.0.0+1
+version: 5.0.0+1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -43,6 +43,12 @@ dependencies:
   intl: ^0.18.1
   shared_preferences: ^2.2.2
   uuid: ^4.3.3
+  path: ^1.9.0
+  
+  # Google Services (Optional)
+  google_sign_in: ^6.2.1
+  googleapis: ^13.1.0
+  googleapis_auth: ^1.5.1
 
 dev_dependencies:
   flutter_test:

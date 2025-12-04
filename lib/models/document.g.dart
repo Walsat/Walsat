@@ -32,13 +32,18 @@ class DocumentAdapter extends TypeAdapter<Document> {
       aiAnalysis: fields[12] as String?,
       isFavorite: fields[13] as bool,
       pdfPath: fields[14] as String?,
+      ocrText: fields[15] as String?,
+      googleDriveId: fields[16] as String?,
+      aiTags: (fields[17] as List?)?.cast<String>(),
+      documentNumber: fields[18] as String?,
+      issueDate: fields[19] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Document obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -68,7 +73,17 @@ class DocumentAdapter extends TypeAdapter<Document> {
       ..writeByte(13)
       ..write(obj.isFavorite)
       ..writeByte(14)
-      ..write(obj.pdfPath);
+      ..write(obj.pdfPath)
+      ..writeByte(15)
+      ..write(obj.ocrText)
+      ..writeByte(16)
+      ..write(obj.googleDriveId)
+      ..writeByte(17)
+      ..write(obj.aiTags)
+      ..writeByte(18)
+      ..write(obj.documentNumber)
+      ..writeByte(19)
+      ..write(obj.issueDate);
   }
 
   @override
