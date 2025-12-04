@@ -458,9 +458,11 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                           child: GradientButton(
                             text: _isAnalyzing 
                                 ? 'جاري التحليل...' 
-                                : (APIConfig.aiProvider == 'deepseek' 
+                                : (APIConfig.actualProvider == 'deepseek' 
                                     ? 'تحليل ذكي (DeepSeek 🔥)'
-                                    : 'تحليل ذكي (GPT-4)'),
+                                    : APIConfig.actualProvider == 'openai'
+                                        ? 'تحليل ذكي (GPT-4)'
+                                        : 'تحليل ذكي (AI)'),
                             icon: Icons.psychology,
                             gradient: AppColors.gradientAI,
                             isLoading: _isAnalyzing,
@@ -501,9 +503,11 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              APIConfig.aiProvider == 'deepseek'
+                              APIConfig.actualProvider == 'deepseek'
                                   ? r'🔥 DeepSeek: أرخص 50 مرة (~$0.10/100 وثيقة)' '\nOCR مجاني: يعمل بدون إنترنت'
-                                  : r'GPT-4: دقة عالية (~$5/100 وثيقة)' '\nOCR مجاني: يعمل بدون إنترنت',
+                                  : APIConfig.actualProvider == 'openai'
+                                      ? r'GPT-4: دقة عالية (~$5/100 وثيقة)' '\nOCR مجاني: يعمل بدون إنترنت'
+                                      : 'OCR مجاني: يعمل بدون إنترنت',
                               style: const TextStyle(fontSize: 12, height: 1.5),
                             ),
                           ),
@@ -715,10 +719,15 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
     });
 
     try {
-      // Determine which provider to use
-      final provider = APIConfig.aiProvider;
-      final providerDisplay = provider == 'deepseek' ? 'DeepSeek' : 'GPT-4';
-      final costDisplay = provider == 'deepseek' ? r'~$0.001' : r'~$0.05';
+      // Determine which provider is actually being used
+      final actualProvider = APIConfig.actualProvider;
+      final providerDisplay = actualProvider == 'deepseek' ? 'DeepSeek' : 'GPT-4';
+      final costDisplay = actualProvider == 'deepseek' ? r'~$0.001' : r'~$0.05';
+      
+      print('🤖 استخدام المزود: $actualProvider');
+      print('🔑 المفتاح: ${APIConfig.currentApiKey.substring(0, 10)}...');
+      print('🌐 Endpoint: ${APIConfig.currentEndpoint}');
+      print('🎯 Model: ${APIConfig.currentModel}');
       
       showDialog(
         context: context,
@@ -743,7 +752,7 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
       final aiService = AIService();
       final result = await aiService.autoClassifyDocument(
         _imagePaths.first,
-        provider: APIConfig.aiProvider,
+        provider: actualProvider,
         apiKey: APIConfig.currentApiKey,
       );
       
