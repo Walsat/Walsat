@@ -23,10 +23,14 @@ class AIService {
   // Check if AI services are configured
   bool get isConfigured => _openAIKey != null || _googleVisionKey != null;
 
-  // Auto-classify document with GPT-4 Vision
-  Future<Map<String, dynamic>> autoClassifyDocument(String imagePath) async {
-    if (_openAIKey == null) {
-      throw Exception('OpenAI API key not configured');
+  // Auto-classify document with AI (GPT-4 Vision or DeepSeek)
+  Future<Map<String, dynamic>> autoClassifyDocument(String imagePath, {String? provider, String? apiKey}) async {
+    // Determine which provider to use
+    final effectiveProvider = provider ?? 'openai';
+    final effectiveKey = apiKey ?? _openAIKey;
+    
+    if (effectiveKey == null) {
+      throw Exception('API key not configured for $effectiveProvider');
     }
 
     try {
@@ -35,15 +39,24 @@ class AIService {
       final imageBytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(imageBytes);
 
-      // Call GPT-4 Vision API for auto-classification
+      // Determine endpoint and model
+      final endpoint = effectiveProvider == 'deepseek' 
+          ? 'https://api.deepseek.com/v1/chat/completions'
+          : 'https://api.openai.com/v1/chat/completions';
+      
+      final model = effectiveProvider == 'deepseek'
+          ? 'deepseek-chat'
+          : 'gpt-4o';
+
+      // Call AI Vision API for auto-classification
       final response = await http.post(
-        Uri.parse('https://api.openai.com/v1/chat/completions'),
+        Uri.parse(endpoint),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_openAIKey',
+          'Authorization': 'Bearer $effectiveKey',
         },
         body: jsonEncode({
-          'model': 'gpt-4o',
+          'model': model,
           'messages': [
             {
               'role': 'user',

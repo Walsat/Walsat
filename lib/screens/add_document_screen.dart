@@ -456,7 +456,11 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                       children: [
                         Expanded(
                           child: GradientButton(
-                            text: _isAnalyzing ? 'جاري التحليل...' : 'تحليل مدفوع (GPT-4)',
+                            text: _isAnalyzing 
+                                ? 'جاري التحليل...' 
+                                : (APIConfig.aiProvider == 'deepseek' 
+                                    ? 'تحليل ذكي (DeepSeek 🔥)'
+                                    : 'تحليل ذكي (GPT-4)'),
                             icon: Icons.psychology,
                             gradient: AppColors.gradientAI,
                             isLoading: _isAnalyzing,
@@ -491,14 +495,16 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
                           color: AppColors.info.withOpacity(0.3),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: AppColors.info, size: 20),
-                          SizedBox(width: 12),
+                          const Icon(Icons.info_outline, color: AppColors.info, size: 20),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'التحليل المدفوع: دقة عالية مع مفتاح OpenAI\nالاستخراج المجاني: يعمل بدون إنترنت',
-                              style: TextStyle(fontSize: 12, height: 1.5),
+                              APIConfig.aiProvider == 'deepseek'
+                                  ? r'🔥 DeepSeek: أرخص 50 مرة (~$0.10/100 وثيقة)' '\nOCR مجاني: يعمل بدون إنترنت'
+                                  : r'GPT-4: دقة عالية (~$5/100 وثيقة)' '\nOCR مجاني: يعمل بدون إنترنت',
+                              style: const TextStyle(fontSize: 12, height: 1.5),
                             ),
                           ),
                         ],
@@ -685,10 +691,14 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
     }
 
     // Check if AI is configured
-    if (!APIConfig.hasOpenAI) {
+    if (!APIConfig.hasAI) {
+      final providerName = !APIConfig.hasOpenAI && !APIConfig.hasDeepSeek 
+          ? 'OpenAI أو DeepSeek'
+          : (APIConfig.hasDeepSeek ? 'DeepSeek' : 'OpenAI');
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('يجب تكوين OpenAI API أولاً في الإعدادات'),
+          content: Text('يجب تكوين $providerName API أولاً في الإعدادات'),
           action: SnackBarAction(
             label: 'إعدادات',
             onPressed: () {
@@ -705,20 +715,25 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
     });
 
     try {
+      // Determine which provider to use
+      final provider = APIConfig.aiProvider;
+      final providerDisplay = provider == 'deepseek' ? 'DeepSeek' : 'GPT-4';
+      final costDisplay = provider == 'deepseek' ? r'~$0.001' : r'~$0.05';
+      
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const AlertDialog(
+        builder: (context) => AlertDialog(
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('🤖 جاري تحليل الوثيقة بالذكاء الاصطناعي...'),
-              SizedBox(height: 8),
-              Text('التصنيف التلقائي + استخراج المعلومات', style: TextStyle(fontSize: 12)),
-              SizedBox(height: 4),
-              Text('قد يستغرق هذا دقيقة...', style: TextStyle(fontSize: 10, color: Colors.grey)),
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text('🤖 جاري تحليل الوثيقة بـ $providerDisplay...'),
+              const SizedBox(height: 8),
+              const Text('التصنيف التلقائي + استخراج المعلومات', style: TextStyle(fontSize: 12)),
+              const SizedBox(height: 4),
+              Text('التكلفة التقريبية: $costDisplay', style: const TextStyle(fontSize: 10, color: Colors.grey)),
             ],
           ),
         ),
@@ -726,7 +741,11 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
 
       // Call real AI service for auto-classification
       final aiService = AIService();
-      final result = await aiService.autoClassifyDocument(_imagePaths.first);
+      final result = await aiService.autoClassifyDocument(
+        _imagePaths.first,
+        provider: APIConfig.aiProvider,
+        apiKey: APIConfig.currentApiKey,
+      );
       
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
