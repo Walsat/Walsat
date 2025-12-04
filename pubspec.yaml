@@ -2,7 +2,7 @@ name: document_archive
 description: "نظام أرشفة الوثائق الاحترافي - Professional Document Archive System"
 publish_to: 'none'
 
-version: 5.0.0+1
+version: 5.1.0+3
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -45,10 +45,15 @@ dependencies:
   uuid: ^4.3.3
   path: ^1.9.0
   
-  # Google Services (Optional)
+  # Google Services & Firebase
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.16.0
   google_sign_in: ^6.2.1
   googleapis: ^13.1.0
   googleapis_auth: ^1.5.1
+  
+  # Icon & Launcher
+  flutter_launcher_icons: ^0.13.1
 
 dev_dependencies:
   flutter_test:
@@ -74,3 +79,11 @@ flutter:
         - asset: assets/fonts/Cairo-Regular.ttf
         - asset: assets/fonts/Cairo-Bold.ttf
           weight: 700
+
+# Flutter Launcher Icons Configuration
+flutter_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#1A237E"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"

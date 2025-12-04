@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 import '../models/document.dart';
 import '../services/database_service.dart';
 import '../services/image_service.dart';
+import '../services/ai_service.dart';
+import '../config/api_config.dart';
 
 class AddDocumentScreen extends StatefulWidget {
   final Document? document;

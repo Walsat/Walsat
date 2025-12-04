@@ -5,6 +5,7 @@ import '../config/api_config.dart';
 import '../services/ai_service.dart';
 import '../services/database_service.dart';
 import 'ai_settings_screen.dart';
+import 'api_keys_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -203,6 +204,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Card(
       child: Column(
         children: [
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.purple.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.vpn_key, color: Colors.purple),
+            ),
+            title: const Text('إدارة مفاتيح API'),
+            subtitle: const Text('أضف مفاتيح OpenAI و Google Vision'),
+            trailing: const Icon(Icons.arrow_back_ios, size: 16),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const APIKeysScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1),
           ListTile(
             leading: Container(
               padding: const EdgeInsets.all(8),

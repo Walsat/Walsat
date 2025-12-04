@@ -23,8 +23,8 @@ class AIService {
   // Check if AI services are configured
   bool get isConfigured => _openAIKey != null || _googleVisionKey != null;
 
-  // Analyze document with GPT-4 Vision
-  Future<Map<String, dynamic>> analyzeDocumentWithGPT4(String imagePath) async {
+  // Auto-classify document with GPT-4 Vision
+  Future<Map<String, dynamic>> autoClassifyDocument(String imagePath) async {
     if (_openAIKey == null) {
       throw Exception('OpenAI API key not configured');
     }
@@ -35,7 +35,7 @@ class AIService {
       final imageBytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(imageBytes);
 
-      // Call GPT-4 Vision API
+      // Call GPT-4 Vision API for auto-classification
       final response = await http.post(
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
@@ -50,17 +50,32 @@ class AIService {
               'content': [
                 {
                   'type': 'text',
-                  'text': '''قم بتحليل هذه الوثيقة الحكومية العراقية واستخرج المعلومات التالية:
-1. نوع الوثيقة (كتب دائرة الأراضي، وزارة الزراعة، محافظ صلاح الدين، مديرية الزراعة، شعبة الزراعة، أوامر مهمة، الأبيض الشكوي)
-2. رقم الوثيقة
-3. تاريخ الإصدار
-4. الجهة المصدرة
-5. الموضوع الرئيسي
-6. الأسماء المذكورة
-7. الأرقام المهمة
-8. ملخص المحتوى
+                  'text': '''قم بتحليل هذه الوثيقة الحكومية العراقية وصنفها بدقة، ثم استخرج جميع المعلومات المهمة:
 
-أرجع النتيجة بتنسيق JSON باللغة العربية.'''
+**التصنيف التلقائي:**
+حدد نوع الوثيقة من القائمة التالية فقط:
+- كتب دائرة الأراضي
+- وزارة الزراعة  
+- محافظ صلاح الدين
+- مديرية الزراعة
+- شعبة الزراعة
+- أوامر مهمة
+- الأبيض الشكوي
+- أخرى
+
+**استخراج المعلومات:**
+1. رقم الوثيقة (كامل ودقيق)
+2. تاريخ الإصدار (بالصيغة: YYYY-MM-DD)
+3. الجهة المصدرة
+4. الموضوع/العنوان الرئيسي
+5. الأسماء المذكورة (قائمة)
+6. الأرقام المهمة (قائمة)
+7. المواقع المذكورة
+8. ملخص المحتوى (3-5 أسطر)
+9. الكلمات المفتاحية (5-10 كلمات)
+10. حالة الوثيقة المقترحة (جديد/تحت المراجعة/مكتمل)
+
+أرجع النتيجة بتنسيق JSON دقيق باللغة العربية.'''
                 },
                 {
                   'type': 'image_url',
@@ -71,7 +86,8 @@ class AIService {
               ]
             }
           ],
-          'max_tokens': 2000,
+          'max_tokens': 3000,
+          'temperature': 0.3,
         }),
       );
 
@@ -81,19 +97,38 @@ class AIService {
         
         // Try to parse JSON response
         try {
-          final jsonContent = jsonDecode(content);
+          // Remove markdown code blocks if present
+          String cleanContent = content.trim();
+          if (cleanContent.startsWith('```json')) {
+            cleanContent = cleanContent.substring(7);
+          }
+          if (cleanContent.startsWith('```')) {
+            cleanContent = cleanContent.substring(3);
+          }
+          if (cleanContent.endsWith('```')) {
+            cleanContent = cleanContent.substring(0, cleanContent.length - 3);
+          }
+          cleanContent = cleanContent.trim();
+          
+          final jsonContent = jsonDecode(cleanContent);
           return jsonContent;
         } catch (e) {
+          print('خطأ في تحليل JSON: $e');
           // If not JSON, return as text
-          return {'analysis': content};
+          return {'analysis': content, 'raw': true};
         }
       } else {
         throw Exception('GPT-4 Vision API error: ${response.statusCode}');
       }
     } catch (e) {
-      print('خطأ في تحليل GPT-4: $e');
+      print('خطأ في التصنيف التلقائي: $e');
       rethrow;
     }
+  }
+
+  // Analyze document with GPT-4 Vision (Legacy method)
+  Future<Map<String, dynamic>> analyzeDocumentWithGPT4(String imagePath) async {
+    return autoClassifyDocument(imagePath);
   }
 
   // OCR with Google Vision API
