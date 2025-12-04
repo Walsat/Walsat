@@ -52,3 +52,10 @@ app.*.map.json
 /android/local.properties
 *.jks
 *.keystore
+
+# API Keys - NEVER COMMIT THESE!
+lib/config/api_config.dart
+**/api_keys.dart
+**/secrets.dart
+**/.env
+*.key
