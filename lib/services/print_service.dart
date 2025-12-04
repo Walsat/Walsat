@@ -148,9 +148,9 @@ class PrintService {
               // معلومات الوثيقة
               _buildInfoRow('النوع:', document.type, ttf, ttfBold),
               _buildInfoRow('الحالة:', document.status, ttf, ttfBold),
-              _buildInfoRow('المالك:', document.owner, ttf, ttfBold),
-              _buildInfoRow('الموقع:', document.location, ttf, ttfBold),
-              _buildInfoRow('المساحة:', document.area, ttf, ttfBold),
+              _buildInfoRow('المالك:', document.ownerName ?? '', ttf, ttfBold),
+              _buildInfoRow('الموقع:', document.location ?? '', ttf, ttfBold),
+              _buildInfoRow('المساحة:', document.area?.toString() ?? '', ttf, ttfBold),
               _buildInfoRow(
                 'التاريخ:',
                 intl.DateFormat('yyyy/MM/dd').format(document.createdAt),

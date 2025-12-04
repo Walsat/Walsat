@@ -45,8 +45,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Future<void> _checkExistingAuth() async {
-    await _authService.initialize();
-    if (_authService.isSignedIn) {
+    // Check if user already logged in
+    if (_authService.isLoggedIn) {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -60,21 +60,36 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       _isLoading = true;
     });
 
-    final success = await _authService.signInWithGoogle();
-    
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+    try {
+      final userCredential = await _authService.signInWithGoogle();
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
 
-      if (success) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
-      } else {
+        if (userCredential != null) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم إلغاء تسجيل الدخول'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.'),
+          SnackBar(
+            content: Text('خطأ في تسجيل الدخول: $e'),
             backgroundColor: Colors.red,
           ),
         );

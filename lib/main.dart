@@ -18,10 +18,6 @@ void main() async {
   // Initialize database
   final databaseService = DatabaseService();
   await databaseService.init();
-  
-  // Initialize Auth Service
-  final authService = AuthService();
-  await authService.initialize();
 
   // Initialize AI services with API keys
   AIService(
@@ -35,7 +31,6 @@ void main() async {
   // Print API status
   APIConfig.printStatus();
   print('✨ التطبيق جاهز مع جميع الميزات!');
-  print('📱 تسجيل الدخول: ${authService.isSignedIn ? "نعم" : "لا"}');
 
   runApp(const MyApp());
 }

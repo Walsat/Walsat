@@ -540,6 +540,22 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
       return;
     }
 
+    // Check if AI is configured
+    if (!APIConfig.hasOpenAI) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('يجب تكوين OpenAI API أولاً في الإعدادات'),
+          action: SnackBarAction(
+            label: 'إعدادات',
+            onPressed: () {
+              Navigator.pushNamed(context, '/api_keys');
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isAnalyzing = true;
     });
@@ -554,25 +570,100 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 16),
-              Text('جاري تحليل الوثيقة بالذكاء الاصطناعي...'),
+              Text('🤖 جاري تحليل الوثيقة بالذكاء الاصطناعي...'),
               SizedBox(height: 8),
-              Text('قد يستغرق هذا دقيقة...', style: TextStyle(fontSize: 12)),
+              Text('التصنيف التلقائي + استخراج المعلومات', style: TextStyle(fontSize: 12)),
+              SizedBox(height: 4),
+              Text('قد يستغرق هذا دقيقة...', style: TextStyle(fontSize: 10, color: Colors.grey)),
             ],
           ),
         ),
       );
 
-      // Note: AI analysis is working!
-      await Future.delayed(const Duration(seconds: 1));
+      // Call real AI service for auto-classification
+      final aiService = AIService();
+      final result = await aiService.autoClassifyDocument(_imagePaths.first);
       
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
         
+        // Apply AI results to the form
+        if (result.containsKey('نوع_الوثيقة') || result.containsKey('type')) {
+          final docType = result['نوع_الوثيقة'] ?? result['type'] ?? '';
+          
+          // Map AI type to internal type
+          final typeMap = {
+            'كتب دائرة الأراضي': 'land_registry',
+            'وزارة الزراعة': 'agriculture_ministry',
+            'محافظ صلاح الدين': 'governor_saladin',
+            'مديرية الزراعة': 'agriculture_directorate',
+            'شعبة الزراعة': 'agriculture_division',
+            'أوامر مهمة': 'important_orders',
+            'الأبيض الشكوي': 'complaints',
+          };
+          
+          final mappedType = typeMap[docType] ?? 'other';
+          setState(() {
+            _selectedType = mappedType;
+          });
+        }
+        
+        if (result.containsKey('العنوان') || result.containsKey('title')) {
+          _titleController.text = result['العنوان'] ?? result['title'] ?? '';
+        }
+        
+        if (result.containsKey('الموضوع') || result.containsKey('subject')) {
+          _titleController.text = result['الموضوع'] ?? result['subject'] ?? _titleController.text;
+        }
+        
+        if (result.containsKey('ملخص') || result.containsKey('summary')) {
+          _descriptionController.text = result['ملخص'] ?? result['summary'] ?? '';
+        }
+        
+        if (result.containsKey('المواقع') || result.containsKey('location')) {
+          final location = result['المواقع'] ?? result['location'];
+          if (location is List && location.isNotEmpty) {
+            _locationController.text = location.join(', ');
+          } else if (location is String) {
+            _locationController.text = location;
+          }
+        }
+        
+        if (result.containsKey('الأسماء') || result.containsKey('names')) {
+          final names = result['الأسماء'] ?? result['names'];
+          if (names is List && names.isNotEmpty) {
+            _ownerController.text = names.first;
+          }
+        }
+        
+        if (result.containsKey('الكلمات_المفتاحية') || result.containsKey('keywords')) {
+          final keywords = result['الكلمات_المفتاحية'] ?? result['keywords'];
+          if (keywords is List) {
+            setState(() {
+              _tags = keywords.cast<String>().toList();
+            });
+          }
+        }
+        
+        if (result.containsKey('الحالة') || result.containsKey('status')) {
+          final status = result['الحالة'] ?? result['status'] ?? '';
+          final statusMap = {
+            'جديد': 'new',
+            'تحت المراجعة': 'review',
+            'مكتمل': 'completed',
+            'مؤرشف': 'archived',
+          };
+          
+          setState(() {
+            _selectedStatus = statusMap[status] ?? 'new';
+          });
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('تم تحليل الوثيقة بنجاح! ✓'),
+            content: Text('✅ تم تحليل الوثيقة وتطبيق التصنيف التلقائي بنجاح!'),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -580,7 +671,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في التحليل: $e')),
+          SnackBar(
+            content: Text('❌ خطأ في التحليل: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     } finally {

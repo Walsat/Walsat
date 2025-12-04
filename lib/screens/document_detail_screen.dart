@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/document.dart';
 import '../services/database_service.dart';
 import '../services/pdf_service.dart';
+import '../services/print_service.dart';
 import '../services/ai_service.dart';
 import '../config/api_config.dart';
 import 'add_document_screen.dart';
@@ -50,6 +51,11 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               }
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.print),
+            tooltip: 'طباعة',
+            onPressed: _printDocument,
+          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'delete') {
@@ -58,6 +64,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 _generatePdf();
               } else if (value == 'share') {
                 _sharePdf();
+              } else if (value == 'print') {
+                _printDocument();
+              } else if (value == 'print_preview') {
+                _showPrintPreview();
               } else if (value == 'ai_analyze') {
                 _analyzeWithAI();
               } else if (value == 'ai_summary') {
@@ -100,6 +110,27 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                 ),
                 const PopupMenuDivider(),
               ],
+              const PopupMenuItem(
+                value: 'print',
+                child: Row(
+                  children: [
+                    Icon(Icons.print, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('طباعة مباشرة'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'print_preview',
+                child: Row(
+                  children: [
+                    Icon(Icons.preview, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('معاينة الطباعة'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'pdf',
                 child: Row(
@@ -869,5 +900,98 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         ),
       ),
     );
+  }
+
+  // طباعة الوثيقة مباشرة
+  Future<void> _printDocument() async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('🖨️ جاري إعداد الطباعة...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final printService = PrintService();
+      final success = await printService.printDocument(widget.document);
+
+      if (mounted) {
+        Navigator.pop(context);
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ تم إرسال الوثيقة للطباعة بنجاح'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ خطأ في الطباعة: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // معاينة الطباعة
+  Future<void> _showPrintPreview() async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('👁️ جاري تحضير المعاينة...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final printService = PrintService();
+      await printService.showPrintPreview(widget.document);
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ خطأ في معاينة الطباعة: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
