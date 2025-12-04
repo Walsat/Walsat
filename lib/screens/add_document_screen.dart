@@ -6,6 +6,7 @@ import '../models/document.dart';
 import '../services/database_service.dart';
 import '../services/image_service.dart';
 import '../services/ai_service.dart';
+import '../services/local_ocr_service.dart';
 import '../config/api_config.dart';
 
 class AddDocumentScreen extends StatefulWidget {
@@ -708,22 +709,95 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 16),
-              Text('جاري استخراج النص من الصورة...'),
+              Text('🔤 جاري استخراج النص من الصورة...'),
+              SizedBox(height: 8),
+              Text('OCR محلي مجاني - Google ML Kit', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              SizedBox(height: 4),
+              Text('لا يتطلب إنترنت أو API', style: TextStyle(fontSize: 10, color: Colors.green)),
             ],
           ),
         ),
       );
 
-      await Future.delayed(const Duration(seconds: 1));
+      // استخدام OCR المحلي المجاني
+      final localOCR = LocalOCRService();
+      final analysis = await localOCR.analyzeDocument(_imagePaths.first);
       
       if (mounted) {
         Navigator.pop(context);
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم استخراج النص بنجاح! ✓'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+        // تطبيق النتائج
+        final extractedText = analysis['extractedText'] as String? ?? '';
+        
+        if (extractedText.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ لم يتم العثور على نص في الصورة'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+        
+        // ملء الوصف بالنص المستخرج
+        _descriptionController.text = extractedText;
+        
+        // تطبيق نوع الوثيقة المقترح
+        final suggestedType = analysis['suggestedType'] as String? ?? 'other';
+        setState(() {
+          _selectedType = suggestedType;
+        });
+        
+        // استخراج الأسماء المحتملة
+        final possibleNames = analysis['possibleNames'] as List<dynamic>? ?? [];
+        if (possibleNames.isNotEmpty) {
+          _ownerController.text = possibleNames.first.toString();
+        }
+        
+        // عرض تفاصيل التحليل
+        final wordCount = analysis['wordCount'] ?? 0;
+        final language = analysis['language'] ?? 'unknown';
+        final hasNumbers = analysis['containsNumbers'] ?? false;
+        final hasDates = analysis['containsDates'] ?? false;
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 8),
+                Text('تم الاستخراج بنجاح!'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('📊 التحليل:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
+                  Text('• عدد الكلمات: $wordCount'),
+                  Text('• اللغة: ${_getLanguageName(language)}'),
+                  Text('• يحتوي على أرقام: ${hasNumbers ? "نعم ✅" : "لا"}'),
+                  Text('• يحتوي على تواريخ: ${hasDates ? "نعم ✅" : "لا"}'),
+                  if (possibleNames.isNotEmpty) ...[
+                    SizedBox(height: 8),
+                    Text('👤 أسماء محتملة:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ...possibleNames.take(3).map((name) => Text('  • $name')),
+                  ],
+                  SizedBox(height: 12),
+                  Text('✨ تم ملء حقل الوصف بالنص المستخرج', 
+                    style: TextStyle(color: Colors.green, fontSize: 12)),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('حسناً'),
+              ),
+            ],
           ),
         );
       }
@@ -731,7 +805,10 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e')),
+          SnackBar(
+            content: Text('❌ خطأ في استخراج النص: ${e.toString()}'),
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     } finally {
@@ -740,6 +817,15 @@ class _AddDocumentScreenState extends State<AddDocumentScreen> {
           _isAnalyzing = false;
         });
       }
+    }
+  }
+  
+  String _getLanguageName(String code) {
+    switch (code) {
+      case 'arabic': return 'عربي 🇸🇦';
+      case 'english': return 'English 🇬🇧';
+      case 'mixed': return 'مختلط (عربي + English)';
+      default: return 'غير محدد';
     }
   }
 }
