@@ -1,15 +1,13 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// خدمة المصادقة والتسجيل
+/// خدمة المصادقة والتسجيل (Simplified - No Firebase)
 /// Authentication and Login Service
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
       'email',
@@ -19,15 +17,12 @@ class AuthService {
   );
 
   // الحالة الحالية للمستخدم
-  User? get currentUser => _auth.currentUser;
+  GoogleSignInAccount? get currentUser => _googleSignIn.currentUser;
   bool get isLoggedIn => currentUser != null;
-  
-  // Stream للاستماع لتغييرات حالة المستخدم
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  /// تسجيل الدخول بحساب Google
-  /// Sign in with Google Account
-  Future<UserCredential?> signInWithGoogle() async {
+  /// تسجيل الدخول بحساب Google (بدون Firebase)
+  /// Sign in with Google Account (Without Firebase)
+  Future<GoogleSignInAccount?> signInWithGoogle() async {
     try {
       // بدء عملية تسجيل الدخول
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -36,23 +31,11 @@ class AuthService {
         return null;
       }
 
-      // الحصول على بيانات المصادقة
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // إنشاء بيانات الاعتماد
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // تسجيل الدخول في Firebase
-      final userCredential = await _auth.signInWithCredential(credential);
-      
       // حفظ معلومات المستخدم
-      await _saveUserInfo(userCredential.user);
+      await _saveUserInfo(googleUser);
       
-      print('✅ تم تسجيل الدخول بنجاح: ${userCredential.user?.email}');
-      return userCredential;
+      print('✅ تم تسجيل الدخول بنجاح: ${googleUser.email}');
+      return googleUser;
       
     } catch (e) {
       print('❌ خطأ في تسجيل الدخول بحساب Google: $e');
@@ -64,10 +47,7 @@ class AuthService {
   /// Sign out
   Future<void> signOut() async {
     try {
-      await Future.wait([
-        _auth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
+      await _googleSignIn.signOut();
       
       // حذف معلومات المستخدم المحفوظة
       await _clearUserInfo();
@@ -95,14 +75,14 @@ class AuthService {
   }
 
   /// حفظ معلومات المستخدم
-  Future<void> _saveUserInfo(User? user) async {
+  Future<void> _saveUserInfo(GoogleSignInAccount? user) async {
     if (user == null) return;
     
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_id', user.uid);
-    await prefs.setString('user_email', user.email ?? '');
+    await prefs.setString('user_id', user.id);
+    await prefs.setString('user_email', user.email);
     await prefs.setString('user_name', user.displayName ?? '');
-    await prefs.setString('user_photo', user.photoURL ?? '');
+    await prefs.setString('user_photo', user.photoUrl ?? '');
     await prefs.setBool('is_logged_in', true);
   }
 
@@ -152,7 +132,7 @@ class AuthService {
         'email': null,
         'name': null,
         'photoUrl': null,
-        'uid': null,
+        'id': null,
       };
     }
 
@@ -160,11 +140,8 @@ class AuthService {
       'isLoggedIn': true,
       'email': user.email,
       'name': user.displayName,
-      'photoUrl': user.photoURL,
-      'uid': user.uid,
-      'emailVerified': user.emailVerified,
-      'creationTime': user.metadata.creationTime,
-      'lastSignInTime': user.metadata.lastSignInTime,
+      'photoUrl': user.photoUrl,
+      'id': user.id,
     };
   }
 

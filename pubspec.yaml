@@ -2,7 +2,7 @@ name: document_archive
 description: "نظام أرشفة الوثائق الاحترافي - Professional Document Archive System"
 publish_to: 'none'
 
-version: 5.1.0+3
+version: 5.1.1+4
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -45,9 +45,9 @@ dependencies:
   uuid: ^4.3.3
   path: ^1.9.0
   
-  # Google Services & Firebase
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.16.0
+  # Google Services (Optional - Disabled for now)
+  # firebase_core: ^2.24.2
+  # firebase_auth: ^4.16.0
   google_sign_in: ^6.2.1
   googleapis: ^13.1.0
   googleapis_auth: ^1.5.1

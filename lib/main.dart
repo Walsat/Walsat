@@ -9,7 +9,6 @@ import 'services/google_drive_service.dart';
 import 'services/auth_service.dart';
 import 'services/print_service.dart';
 import 'config/api_config.dart';
-import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
@@ -201,7 +200,7 @@ class MyApp extends StatelessWidget {
         ),
         
         themeMode: ThemeMode.system,
-        home: const LoginScreen(),
+        home: const HomeScreen(),
       ),
     );
   }
