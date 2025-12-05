@@ -9,7 +9,8 @@ import 'services/google_drive_service.dart';
 import 'services/auth_service.dart';
 import 'services/print_service.dart';
 import 'config/api_config.dart';
-import 'screens/home_screen.dart';
+import 'screens/stunning_home_screen.dart';
+import 'theme/modern_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,128 +80,11 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         
-        // Theme - Modern Gradient Design
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.deepPurple,
-            brightness: Brightness.light,
-            primary: Colors.deepPurple,
-            secondary: Colors.purpleAccent,
-            tertiary: Colors.tealAccent,
-          ),
-          fontFamily: 'Cairo',
-          
-          // AppBar theme
-          appBarTheme: AppBarTheme(
-            centerTitle: true,
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-          ),
-          
-          // Card theme
-          cardTheme: CardTheme(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          
-          // Input decoration theme
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 18,
-            ),
-          ),
-          
-          // Button theme
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 36,
-                vertical: 18,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 6,
-            ),
-          ),
-          
-          // FloatingActionButton theme
-          floatingActionButtonTheme: FloatingActionButtonThemeData(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            elevation: 8,
-          ),
-        ),
-        
-        // Dark theme - Modern Dark Design
-        darkTheme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.deepPurple,
-            brightness: Brightness.dark,
-            primary: Colors.deepPurpleAccent,
-            secondary: Colors.purpleAccent,
-            tertiary: Colors.tealAccent,
-          ),
-          fontFamily: 'Cairo',
-          
-          appBarTheme: AppBarTheme(
-            centerTitle: true,
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-          ),
-          
-          cardTheme: CardTheme(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 18,
-            ),
-          ),
-          
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 36,
-                vertical: 18,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 6,
-            ),
-          ),
-          
-          floatingActionButtonTheme: FloatingActionButtonThemeData(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            elevation: 8,
-          ),
-        ),
-        
-        themeMode: ThemeMode.system,
-        home: const HomeScreen(),
+        // Modern Theme with Stunning UI
+        theme: ModernTheme.darkTheme,
+        darkTheme: ModernTheme.darkTheme,
+        themeMode: ThemeMode.dark, // Always use dark theme for stunning effect
+        home: const StunningHomeScreen(),
       ),
     );
   }
