@@ -1,38 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'services/storage_service.dart';
+import 'services/database_service.dart';
+import 'services/image_service.dart';
+import 'services/pdf_service.dart';
 import 'services/ai_service.dart';
+import 'services/google_drive_service.dart';
+import 'services/auth_service.dart';
 import 'services/print_service.dart';
-import 'screens/home_screen.dart';
+import 'config/api_config.dart';
+import 'screens/stunning_home_screen.dart';
+import 'theme/modern_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize database
+  final databaseService = DatabaseService();
+  await databaseService.init();
 
-  // Initialize storage service
-  final storageService = StorageService();
-  await storageService.init();
-
-  // Initialize AI service with environment variables
-  // TODO: Load these from secure storage or environment
-  final aiService = AIService();
-  // aiService.init(
-  //   apiKey: 'YOUR_OPENAI_API_KEY',
-  //   apiEndpoint: 'https://api.openai.com/v1',
-  // );
-
-  // Initialize print service
-  final printService = PrintService();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        Provider<StorageService>.value(value: storageService),
-        Provider<AIService>.value(value: aiService),
-        Provider<PrintService>.value(value: printService),
-      ],
-      child: const MyApp(),
-    ),
+  // Initialize AI services with API keys
+  AIService(
+    openAIKey: APIConfig.hasOpenAI ? APIConfig.openAIKey : null,
+    googleVisionKey: APIConfig.hasGoogleVision ? APIConfig.googleVisionKey : null,
   );
+  
+  GoogleDriveService(); // Will be configured later with OAuth
+  PrintService(); // Initialize print service
+
+  // Print API status
+  APIConfig.printStatus();
+  print('✨ التطبيق جاهز مع جميع الميزات!');
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -40,53 +40,52 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Land Archive',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.light,
+    return MultiProvider(
+      providers: [
+        Provider<DatabaseService>(
+          create: (_) => DatabaseService(),
         ),
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 2,
+        Provider<ImageService>(
+          create: (_) => ImageService(),
         ),
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+        Provider<PdfService>(
+          create: (_) => PdfService(),
         ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+        Provider<AIService>(
+          create: (_) => AIService(),
         ),
+        Provider<GoogleDriveService>(
+          create: (_) => GoogleDriveService(),
+        ),
+        Provider<AuthService>(
+          create: (_) => AuthService(),
+        ),
+        Provider<PrintService>(
+          create: (_) => PrintService(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'أرشيف الوثائق',
+        debugShowCheckedModeBanner: false,
+        
+        // Arabic localization
+        locale: const Locale('ar', 'SA'),
+        supportedLocales: const [
+          Locale('ar', 'SA'),
+          Locale('en', 'US'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        
+        // Modern Theme with Stunning UI
+        theme: ModernTheme.darkTheme,
+        darkTheme: ModernTheme.darkTheme,
+        themeMode: ThemeMode.dark, // Always use dark theme for stunning effect
+        home: const StunningHomeScreen(),
       ),
-      darkTheme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 2,
-        ),
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      themeMode: ThemeMode.system,
-      home: const HomeScreen(),
     );
   }
 }

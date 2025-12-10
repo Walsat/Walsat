@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/storage_service.dart';
 import '../models/document.dart';
+import '../services/database_service.dart';
 import 'document_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -14,7 +14,6 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
   List<Document> _searchResults = [];
-  bool _isSearching = false;
 
   @override
   void dispose() {
@@ -23,24 +22,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _performSearch(String query) {
-    if (query.trim().isEmpty) {
-      setState(() {
-        _searchResults = [];
-        _isSearching = false;
-      });
-      return;
-    }
-
+    final databaseService = context.read<DatabaseService>();
     setState(() {
-      _isSearching = true;
-    });
-
-    final storageService = Provider.of<StorageService>(context, listen: false);
-    final results = storageService.searchDocuments(query);
-
-    setState(() {
-      _searchResults = results;
-      _isSearching = false;
+      _searchResults = databaseService.searchDocuments(query);
     });
   }
 
@@ -50,212 +34,123 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         title: TextField(
           controller: _searchController,
-          decoration: const InputDecoration(
-            hintText: 'Search documents...',
-            border: InputBorder.none,
-            hintStyle: TextStyle(color: Colors.white70),
-          ),
-          style: const TextStyle(color: Colors.white),
           autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'ابحث عن وثيقة...',
+            border: InputBorder.none,
+          ),
           onChanged: _performSearch,
         ),
-        actions: [
-          if (_searchController.text.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                _searchController.clear();
-                _performSearch('');
-              },
-            ),
-        ],
       ),
-      body: _buildBody(),
+      body: _searchController.text.isEmpty
+          ? _buildEmptyState()
+          : _searchResults.isEmpty
+              ? _buildNoResults()
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _searchResults.length,
+                  itemBuilder: (context, index) {
+                    return _buildDocumentCard(_searchResults[index]);
+                  },
+                ),
     );
   }
 
-  Widget _buildBody() {
-    if (_searchController.text.trim().isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Start typing to search',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_isSearching) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    if (_searchResults.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No results found',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _searchResults.length,
-      itemBuilder: (context, index) {
-        final doc = _searchResults[index];
-        return _buildDocumentCard(context, doc);
-      },
-    );
-  }
-
-  Widget _buildDocumentCard(BuildContext context, Document doc) {
+  Widget _buildDocumentCard(Document document) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            _getDocumentIcon(document.type),
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+        ),
+        title: Text(
+          document.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(document.typeDisplayName),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Theme.of(context).colorScheme.outline,
+        ),
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => DocumentDetailScreen(document: doc),
+              builder: (context) => DocumentDetailScreen(document: document),
             ),
           );
         },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: _getTypeColor(doc.type),
-                    child: Icon(
-                      _getTypeIcon(doc.type),
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          doc.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          doc.type,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Chip(
-                    label: Text(
-                      doc.status.toUpperCase(),
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                    backgroundColor: _getStatusColor(doc.status),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                doc.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
 
-  Color _getTypeColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'land deed':
-        return Colors.blue;
-      case 'contract':
-      case 'purchase contract':
-        return Colors.green;
-      case 'survey':
-      case 'survey document':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search,
+            size: 100,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'ابحث عن وثيقة',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+          ),
+        ],
+      ),
+    );
   }
 
-  IconData _getTypeIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'land deed':
-        return Icons.location_on;
-      case 'contract':
-      case 'purchase contract':
-        return Icons.description;
+  Widget _buildNoResults() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 100,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'لا توجد نتائج',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getDocumentIcon(String type) {
+    switch (type) {
+      case 'land_deed':
+        return Icons.home;
+      case 'sale_contract':
+        return Icons.sell;
+      case 'rent_contract':
+        return Icons.key;
       case 'survey':
-      case 'survey document':
         return Icons.map;
+      case 'license':
+        return Icons.description;
       default:
-        return Icons.folder;
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green.shade100;
-      case 'archived':
-        return Colors.orange.shade100;
-      case 'pending':
-        return Colors.amber.shade100;
-      default:
-        return Colors.grey.shade100;
+        return Icons.insert_drive_file;
     }
   }
 }

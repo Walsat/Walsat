@@ -16,10 +16,8 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VSCode related
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -31,6 +29,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+lib/generated_plugin_registrant.dart
 
 # Symbolication related
 app.*.symbols
@@ -43,39 +42,20 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Environment variables
-.env
-.env.local
-.env.*.local
+# APK files - we want to include them
+# Comment out the line below to NOT exclude APK files
+# *.apk
 
-# API Keys (never commit these)
+# Build files but keep APKs
+/android/.gradle/
+/android/captures/
+/android/local.properties
+*.jks
+*.keystore
+
+# API Keys - NEVER COMMIT THESE!
+lib/config/api_config.dart
 **/api_keys.dart
-secrets.dart
-
-# Generated files
-*.g.dart
-*.freezed.dart
-
-# iOS related
-**/ios/Flutter/flutter_export_environment.sh
-**/ios/Flutter/App.framework
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/Flutter.podspec
-**/ios/Flutter/Generated.xcconfig
-**/ios/Flutter/.last_build_id
-**/ios/ServiceDefinitions.json
-**/ios/Runner/GeneratedPluginRegistrant.*
-
-# APK files
-*.apk
-*.aab
-
-# Local database
-*.hive
-*.hive.lock
-
-# Coverage
-coverage/
-
-# Exceptions to above rules.
-!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+**/secrets.dart
+**/.env
+*.key

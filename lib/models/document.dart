@@ -5,49 +5,64 @@ part 'document.g.dart';
 @HiveType(typeId: 0)
 class Document extends HiveObject {
   @HiveField(0)
-  String id;
+  late String id;
 
   @HiveField(1)
-  String title;
+  late String title;
 
   @HiveField(2)
-  String description;
+  late String description;
 
   @HiveField(3)
-  String type; // e.g., "Land Deed", "Contract", "Survey"
+  late String type; // نوع الوثيقة: صك ملكية، عقد بيع، إيجار، etc
 
   @HiveField(4)
-  DateTime createdAt;
+  late DateTime createdAt;
 
   @HiveField(5)
-  DateTime? updatedAt;
+  late DateTime? updatedAt;
 
   @HiveField(6)
-  List<String> imagePaths;
+  late List<String> imagePaths;
 
   @HiveField(7)
-  String? pdfPath;
+  late List<String> tags;
 
   @HiveField(8)
-  Map<String, dynamic>? metadata;
+  late String status; // جديد، تحت المراجعة، مكتمل، أرشيف
 
   @HiveField(9)
-  List<String> tags;
-
-  @HiveField(10)
-  String? aiAnalysis;
-
-  @HiveField(11)
-  String status; // e.g., "active", "archived", "pending"
-
-  @HiveField(12)
   String? location;
 
-  @HiveField(13)
+  @HiveField(10)
+  String? ownerName;
+
+  @HiveField(11)
   double? area;
 
+  @HiveField(12)
+  String? aiAnalysis;
+
+  @HiveField(13)
+  bool isFavorite;
+
   @HiveField(14)
-  String? ownerName;
+  String? pdfPath;
+
+  @HiveField(15)
+  String? ocrText;
+
+  @HiveField(16)
+  String? googleDriveId;
+
+  @HiveField(17)
+  List<String>? aiTags;
+
+  @HiveField(18)
+  String? documentNumber;
+
+  @HiveField(19)
+  String? issueDate;
 
   Document({
     required this.id,
@@ -57,94 +72,58 @@ class Document extends HiveObject {
     required this.createdAt,
     this.updatedAt,
     required this.imagePaths,
-    this.pdfPath,
-    this.metadata,
     required this.tags,
-    this.aiAnalysis,
-    this.status = 'active',
+    required this.status,
     this.location,
-    this.area,
     this.ownerName,
+    this.area,
+    this.aiAnalysis,
+    this.isFavorite = false,
+    this.pdfPath,
+    this.ocrText,
+    this.googleDriveId,
+    this.aiTags,
+    this.documentNumber,
+    this.issueDate,
   });
 
-  // Convert to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'type': type,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
-      'imagePaths': imagePaths,
-      'pdfPath': pdfPath,
-      'metadata': metadata,
-      'tags': tags,
-      'aiAnalysis': aiAnalysis,
-      'status': status,
-      'location': location,
-      'area': area,
-      'ownerName': ownerName,
-    };
+  // Helper method to get display name for document type
+  String get typeDisplayName {
+    switch (type) {
+      case 'land_registry':
+        return 'كتب دائرة الأراضي';
+      case 'agriculture_ministry':
+        return 'وزارة الزراعة';
+      case 'governor_saladin':
+        return 'محافظ صلاح الدين';
+      case 'agriculture_directorate':
+        return 'مديرية الزراعة';
+      case 'agriculture_division':
+        return 'شعبة الزراعة';
+      case 'important_orders':
+        return 'أوامر مهمة';
+      case 'complaints':
+        return 'الأبيض الشكوي';
+      case 'other':
+        return 'أخرى';
+      default:
+        return type;
+    }
   }
 
-  // Create from JSON
-  factory Document.fromJson(Map<String, dynamic> json) {
-    return Document(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      description: json['description'] as String,
-      type: json['type'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'] as String)
-          : null,
-      imagePaths: List<String>.from(json['imagePaths'] as List),
-      pdfPath: json['pdfPath'] as String?,
-      metadata: json['metadata'] as Map<String, dynamic>?,
-      tags: List<String>.from(json['tags'] as List),
-      aiAnalysis: json['aiAnalysis'] as String?,
-      status: json['status'] as String? ?? 'active',
-      location: json['location'] as String?,
-      area: json['area'] as double?,
-      ownerName: json['ownerName'] as String?,
-    );
-  }
-
-  // Copy with
-  Document copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? type,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    List<String>? imagePaths,
-    String? pdfPath,
-    Map<String, dynamic>? metadata,
-    List<String>? tags,
-    String? aiAnalysis,
-    String? status,
-    String? location,
-    double? area,
-    String? ownerName,
-  }) {
-    return Document(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      type: type ?? this.type,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      imagePaths: imagePaths ?? this.imagePaths,
-      pdfPath: pdfPath ?? this.pdfPath,
-      metadata: metadata ?? this.metadata,
-      tags: tags ?? this.tags,
-      aiAnalysis: aiAnalysis ?? this.aiAnalysis,
-      status: status ?? this.status,
-      location: location ?? this.location,
-      area: area ?? this.area,
-      ownerName: ownerName ?? this.ownerName,
-    );
+  // Helper method to get display name for status
+  String get statusDisplayName {
+    switch (status) {
+      case 'new':
+        return 'جديد';
+      case 'review':
+        return 'تحت المراجعة';
+      case 'completed':
+        return 'مكتمل';
+      case 'archived':
+        return 'مؤرشف';
+      default:
+        return status;
+    }
   }
 }

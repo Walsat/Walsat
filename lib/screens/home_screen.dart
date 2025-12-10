@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/storage_service.dart';
 import '../models/document.dart';
-import 'documents_list_screen.dart';
+import '../services/database_service.dart';
+import '../theme/app_colors.dart';
 import 'add_document_screen.dart';
+import 'document_detail_screen.dart';
 import 'search_screen.dart';
+import 'statistics_screen.dart';
+import 'ai_settings_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,20 +18,38 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  String _selectedFilter = 'all';
+  String _selectedType = 'all';
 
   @override
   Widget build(BuildContext context) {
-    final storageService = Provider.of<StorageService>(context);
-    final stats = storageService.getStatistics();
-    final recentDocs = storageService.getRecentDocuments(limit: 5);
+    final databaseService = context.read<DatabaseService>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Land Archive'),
+        title: const Row(
+          children: [
+            Icon(Icons.folder_special, size: 28),
+            SizedBox(width: 12),
+            Text('أرشيف الوثائق'),
+          ],
+        ),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppColors.gradientPrimary,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.search, size: 22),
+            ),
             onPressed: () {
               Navigator.push(
                 context,
@@ -38,214 +60,460 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.bar_chart, size: 22),
+            ),
             onPressed: () {
-              _showSettingsDialog(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const StatisticsScreen(),
+                ),
+              );
             },
+          ),
+          PopupMenuButton<String>(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.more_vert, size: 22),
+            ),
+            onSelected: (value) {
+              if (value == 'settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
+              } else if (value == 'about') {
+                _showAboutDialog();
+              } else if (value == 'ai_settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AISettingsScreen(),
+                  ),
+                );
+              }
+            },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: AppColors.primary),
+                    SizedBox(width: 12),
+                    Text('الإعدادات'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'ai_settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.psychology, color: Color(0xFF9C27B0)),
+                    SizedBox(width: 12),
+                    Text('إعدادات AI'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'about',
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: AppColors.secondary),
+                    SizedBox(width: 12),
+                    Text('حول التطبيق'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Filter chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                _buildFilterChip('الكل', 'all', _selectedFilter == 'all'),
+                const SizedBox(width: 8),
+                _buildFilterChip('جديد', 'new', _selectedFilter == 'new'),
+                const SizedBox(width: 8),
+                _buildFilterChip('تحت المراجعة', 'review', _selectedFilter == 'review'),
+                const SizedBox(width: 8),
+                _buildFilterChip('مكتمل', 'completed', _selectedFilter == 'completed'),
+                const SizedBox(width: 8),
+                _buildFilterChip('مؤرشف', 'archived', _selectedFilter == 'archived'),
+                const SizedBox(width: 8),
+                _buildFilterChip('المفضلة', 'favorites', _selectedFilter == 'favorites'),
+              ],
+            ),
+          ),
+
+          // Type filter
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                _buildTypeChip('الكل', 'all', _selectedType == 'all'),
+                const SizedBox(width: 8),
+                _buildTypeChip('كتب الأراضي', 'land_registry', _selectedType == 'land_registry'),
+                const SizedBox(width: 8),
+                _buildTypeChip('وزارة الزراعة', 'agriculture_ministry', _selectedType == 'agriculture_ministry'),
+                const SizedBox(width: 8),
+                _buildTypeChip('المحافظ', 'governor_saladin', _selectedType == 'governor_saladin'),
+                const SizedBox(width: 8),
+                _buildTypeChip('مديرية زراعة', 'agriculture_directorate', _selectedType == 'agriculture_directorate'),
+                const SizedBox(width: 8),
+                _buildTypeChip('شعبة زراعة', 'agriculture_division', _selectedType == 'agriculture_division'),
+                const SizedBox(width: 8),
+                _buildTypeChip('أوامر مهمة', 'important_orders', _selectedType == 'important_orders'),
+                const SizedBox(width: 8),
+                _buildTypeChip('الشكوي', 'complaints', _selectedType == 'complaints'),
+                const SizedBox(width: 8),
+                _buildTypeChip('أخرى', 'other', _selectedType == 'other'),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Documents list
+          Expanded(
+            child: StreamBuilder(
+              stream: Stream.periodic(const Duration(milliseconds: 500)),
+              builder: (context, snapshot) {
+                List<Document> documents = databaseService.getAllDocuments();
+
+                // Apply filters
+                if (_selectedFilter == 'favorites') {
+                  documents = databaseService.getFavorites();
+                } else if (_selectedFilter != 'all') {
+                  documents = databaseService.filterByStatus(_selectedFilter);
+                }
+
+                // Apply type filter
+                if (_selectedType != 'all') {
+                  documents = documents.where((doc) => doc.type == _selectedType).toList();
+                }
+
+                // Sort by date (newest first)
+                documents.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+                if (documents.isEmpty) {
+                  return _buildEmptyState();
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    setState(() {});
+                  },
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: documents.length,
+                    itemBuilder: (context, index) {
+                      return _buildDocumentCard(documents[index]);
+                    },
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          setState(() {});
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.gradientPrimary,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.5),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AddDocumentScreen(),
+              ),
+            );
+            if (result == true) {
+              setState(() {});
+            }
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          icon: const Icon(Icons.add_circle_outline, size: 28),
+          label: const Text(
+            'إضافة وثيقة',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value, bool isSelected) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isSelected ? AppColors.gradientPrimary : null,
+        color: isSelected ? null : Colors.grey[200],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _selectedFilter = value;
+            });
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSelected)
+                  const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                if (isSelected) const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.black87,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeChip(String label, String value, bool isSelected) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isSelected ? AppColors.gradientSecondary : null,
+        color: isSelected ? null : Colors.grey[200],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: AppColors.secondary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _selectedType = value;
+            });
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSelected)
+                  const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                if (isSelected) const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.black87,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentCard(Document document) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        onTap: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DocumentDetailScreen(document: document),
+            ),
+          );
+          if (result == true) {
+            setState(() {});
+          }
         },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Welcome Section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome to Land Archive',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Manage your land documents with AI-powered features',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Statistics Cards
-              Text(
-                'Statistics',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.5,
+              Row(
                 children: [
-                  _buildStatCard(
-                    context,
-                    'Total Documents',
-                    stats['total'].toString(),
-                    Icons.description,
-                    Colors.blue,
+                  // Document icon
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _getDocumentIcon(document.type),
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      size: 24,
+                    ),
                   ),
-                  _buildStatCard(
-                    context,
-                    'Active',
-                    stats['active'].toString(),
-                    Icons.check_circle,
-                    Colors.green,
+                  const SizedBox(width: 16),
+                  
+                  // Title and type
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          document.title,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          document.typeDisplayName,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
-                  _buildStatCard(
-                    context,
-                    'Archived',
-                    stats['archived'].toString(),
-                    Icons.archive,
-                    Colors.orange,
-                  ),
-                  _buildStatCard(
-                    context,
-                    'Pending',
-                    stats['pending'].toString(),
-                    Icons.pending,
-                    Colors.amber,
-                  ),
+                  
+                  // Favorite icon
+                  if (document.isFavorite)
+                    Icon(
+                      Icons.star,
+                      color: Colors.amber,
+                      size: 20,
+                    ),
                 ],
               ),
-
-              const SizedBox(height: 24),
-
-              // Recent Documents
+              
+              const SizedBox(height: 12),
+              
+              // Description
+              if (document.description.isNotEmpty)
+                Text(
+                  document.description,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              
+              const SizedBox(height: 12),
+              
+              // Tags
+              if (document.tags.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: document.tags.take(3).map((tag) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        tag,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSecondaryContainer,
+                            ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              
+              const SizedBox(height: 12),
+              
+              // Status and date
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(document.status),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      document.statusDisplayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.access_time,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  const SizedBox(width: 4),
                   Text(
-                    'Recent Documents',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DocumentsListScreen(),
+                    _formatDate(document.createdAt),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
                         ),
-                      );
-                    },
-                    child: const Text('View All'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              if (recentDocs.isEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(40),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.description_outlined,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No documents yet',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Add your first document to get started',
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: recentDocs.length,
-                  itemBuilder: (context, index) {
-                    final doc = recentDocs[index];
-                    return _buildDocumentCard(context, doc);
-                  },
-                ),
-
-              const SizedBox(height: 20),
-
-              // Quick Actions
-              Text(
-                'Quick Actions',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildActionCard(
-                      context,
-                      'Add Document',
-                      Icons.add_circle,
-                      Colors.blue,
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AddDocumentScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildActionCard(
-                      context,
-                      'Search',
-                      Icons.search,
-                      Colors.green,
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SearchScreen(),
-                          ),
-                        );
-                      },
-                    ),
                   ),
                 ],
               ),
@@ -253,168 +521,99 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddDocumentScreen(),
-            ),
-          );
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('New Document'),
-      ),
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context,
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDocumentCard(BuildContext context, Document doc) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getTypeColor(doc.type),
-          child: Icon(
-            _getTypeIcon(doc.type),
-            color: Colors.white,
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.folder_open,
+            size: 100,
+            color: Theme.of(context).colorScheme.outline,
           ),
-        ),
-        title: Text(
-          doc.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          doc.type,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Chip(
-          label: Text(
-            doc.status,
-            style: const TextStyle(fontSize: 11),
+          const SizedBox(height: 16),
+          Text(
+            'لا توجد وثائق',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
           ),
-          backgroundColor: _getStatusColor(doc.status),
-        ),
-        onTap: () {
-          // Navigate to document detail
-        },
+          const SizedBox(height: 8),
+          Text(
+            'اضغط على الزر أدناه لإضافة وثيقة جديدة',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildActionCard(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  IconData _getDocumentIcon(String type) {
+    switch (type) {
+      case 'land_registry':
+        return Icons.domain;
+      case 'agriculture_ministry':
+        return Icons.agriculture;
+      case 'governor_saladin':
+        return Icons.account_balance;
+      case 'agriculture_directorate':
+        return Icons.business;
+      case 'agriculture_division':
+        return Icons.corporate_fare;
+      case 'important_orders':
+        return Icons.priority_high;
+      case 'complaints':
+        return Icons.report_problem;
+      default:
+        return Icons.insert_drive_file;
+    }
   }
 
-  Color _getTypeColor(String type) {
-    switch (type.toLowerCase()) {
-      case 'land deed':
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'new':
         return Colors.blue;
-      case 'contract':
-        return Colors.green;
-      case 'survey':
+      case 'review':
         return Colors.orange;
+      case 'completed':
+        return Colors.green;
+      case 'archived':
+        return Colors.grey;
       default:
         return Colors.grey;
     }
   }
 
-  IconData _getTypeIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'land deed':
-        return Icons.location_on;
-      case 'contract':
-        return Icons.description;
-      case 'survey':
-        return Icons.map;
-      default:
-        return Icons.folder;
-    }
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green.shade100;
-      case 'archived':
-        return Colors.orange.shade100;
-      case 'pending':
-        return Colors.amber.shade100;
-      default:
-        return Colors.grey.shade100;
-    }
-  }
-
-  void _showSettingsDialog(BuildContext context) {
+  void _showAboutDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Settings'),
-        content: const Text('Settings panel coming soon...'),
+        title: const Text('حول التطبيق'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('نظام أرشفة الوثائق الاحترافي'),
+            SizedBox(height: 8),
+            Text('الإصدار: 4.0.0'),
+            SizedBox(height: 8),
+            Text('تطبيق شامل لأرشفة وإدارة الوثائق'),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: const Text('حسناً'),
           ),
         ],
       ),
